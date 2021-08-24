@@ -1,6 +1,6 @@
 import config
 
-import os, sys, re
+import os, sys, re, time
 import datetime as dt
 
 ## base object (hyper)graph node = Marvin Minsky's Frame
@@ -109,6 +109,8 @@ class Object:
         that = self.box(that)
         self.nest[idx] = that; return self
 
+    def dropall(self): self.nest = [] ; return self
+
 class Primitive(Object): pass
 
 class S(Primitive):
@@ -204,6 +206,27 @@ class Project(Module):
         self.vs_code()
         self.f_giti()
         self.f_mk()
+        self.r_readme()
+
+    def r_readme(self):
+        self.MODULE = self.TITLE = f'{self}'
+        self.AUTHOR = 'Dmitry Ponyatov'
+        self.EMAIL = 'dponyatov@gmail.com'
+        self.YEAR = time.localtime()[0]
+        self.LICENSE = 'All rights reserved'
+        self.GITHUB = 'https://github.com/ponyatov/'
+        self.ABOUT = ''
+        #
+        self.readme = File('README','.md');self.d//self.readme
+        self.sync_readme()
+
+    def sync_readme(self):
+        self.readme.dropall() \
+            // f'#  `{self.MODULE}`' \
+            // f'## {self.TITLE}' // '' \
+            // f'(c) {self.AUTHOR} <<{self.EMAIL}>> {self.YEAR} {self.LICENSE}' // '' \
+            // f'github: {self.GITHUB}/{self}' // '' \
+            // self.ABOUT
 
     def f_mk(self):
         self.mk = mkFile();self.d//self.mk
@@ -347,6 +370,7 @@ class Project(Module):
             // '/docs/' // f'/{self}/' // ''
 
     def sync(self):
+        self.sync_readme()
         self.d.sync()
 
     def __or__(self,mod):
@@ -404,9 +428,9 @@ class Python(Mod):
             // '"*.pyc":true, "pyvenv.cfg":true,' \
             // '"**/.cache/**":true, "**/__pycache__/**":true,'
         p.vscode.settings.ins(0,(Sec('py',sfx='')
-            // '"python.pythonPath"              : "./bin/python3",'
-            // '"python.formatting.provider"     : "autopep8",'
-            // '"python.formatting.autopep8Path" : "./bin/autopep8",'
+            // f'"python.pythonPath"              : "./bin/python3",'
+            // f'"python.formatting.provider"     : "autopep8",'
+            // f'"python.formatting.autopep8Path" : "./bin/autopep8",'
             // f'"python.formatting.autopep8Args" : ["{Python.PEP8}"],'
         ))
 
@@ -444,4 +468,11 @@ class Java(Mod):
 
 # from metaL import *
 prj = Project() | metaL() | Rust()
+prj.TITLE = 'Data Acquisition Queues'
+prj.ABOUT = '''
+* ADC/DAC interfacing
+* dataflow programming
+* DSP: real-time signal processing
+* IoT/Automation support
+'''
 prj.sync()
