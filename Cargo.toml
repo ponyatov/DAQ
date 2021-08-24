@@ -20,6 +20,7 @@ tracing-subscriber = "0.2"
 # \ hw
 # detect the number of CPU/cores on the current machine
 num_cpus = "1.13"
+raw-cpuid = "10.2"
 # / hw
 
 # \ dsp

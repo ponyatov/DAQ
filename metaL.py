@@ -423,8 +423,30 @@ class Project(Module):
             // self.vscode.editor \
             // self.vscode.browser
 
+    def task(self, group, target):
+        return (S('{', '},')
+                // f'"label":          "{group}: {target}",'
+                // f'"type":           "shell",'
+                // f'"command":        "make {target}",'
+                // f'"problemMatcher": []')
+
     def vs_tasks(self):
-        self.vscode.tasks = jsonFile('tasks'); self.vscode // self.vscode.tasks
+        self.vscode.tasks_ = jsonFile('tasks')
+        #
+        self.vscode.tasks = (Sec()
+                             // self.task('project', 'install')
+                             // self.task('project', 'update')
+                             // self.task('git', 'dev')
+                             // self.task('git', 'ponymuck')
+                             // self.task('metaL', 'meta')
+                             )
+        #
+        self.vscode \
+            // (self.vscode.tasks_
+                // (S('{', '}')
+                    // '"version": "2.0.0",'
+                    // (S('"tasks": [', ']')
+                        // self.vscode.tasks)))
 
     def vs_exts(self):
         self.vscode.exts = jsonFile(
@@ -545,7 +567,7 @@ class Python(Mod):
 
     def p_mods(self):
         return (Sec()
-                // 'import os, sys, re'
+                // 'import os, sys, re, time'
                 // 'import datetime as dt')
 
     def f_mk(self, p):
@@ -655,19 +677,20 @@ class Rust(Mod):
         #
         p.rs.use = Sec('use', pfx=''); p.rs // p.rs.use
         p.rs.use \
-            // 'use tracing::info;'
+            // 'use tracing::{info, instrument};'
         #
-        p.rs.main = S('fn main() {', '}', pfx=''); p.rs // p.rs.main
+        p.rs.main = S('fn main() {', '}', pfx='\n#[instrument]')
+        p.rs // p.rs.main
         #
         p.rs.main.init = Sec('init')
         #
         p.rs.main \
             // 'tracing_subscriber::fmt::init();' \
-            // 'info!("main() {}", "start");'
+            // 'info!("start");'
         p.rs.main \
             // p.rs.main.init
         p.rs.main \
-            // 'info!("main() {}", "stop");'
+            // 'info!("stop");'
 
     def f_test(self, p):
         p.rs.test = rsFile('test'); p.src // p.rs.test
@@ -743,18 +766,39 @@ prj.ABOUT = '''
 prj.cargo.hw = Sec('hw'); prj.cargo // prj.cargo.hw
 prj.cargo.hw \
     // '# detect the number of CPU/cores on the current machine' \
-    // 'num_cpus = "1.13"'
+    // 'num_cpus = "1.13"' \
+    // 'raw-cpuid = "10.2"'
+
+prj.rs.extern.ins(0, 'extern crate num_cpus;')
+
+prj.rs.main.init // 'cpu();'
+prj.rs.cpu = Sec('cpu', pfx='')
+prj.rs.cpu \
+    // (S('struct CPU {', '}', pfx='#[derive(Debug)]')
+        // 'cores: u8,'
+        // 'vendor: String,'
+        // 'brand: String,'
+        // 'serial: u128,')
+
+prj.rs.cpu \
+    // (S('impl CPU {', '}', pfx='')
+        // (S('pub fn new() -> Self {', '}')
+            // 'let cpuid = raw_cpuid::CpuId::new();'
+            // (S('CPU {', '}')
+                // 'cores: num_cpus::get() as u8,'
+                // 'vendor: String::from(cpuid.get_vendor_info().unwrap().as_str()),'
+                // 'brand: String::from(cpuid.get_processor_brand_string().unwrap().as_str()),'
+                // 'serial: cpuid.get_processor_serial().unwrap().serial_all(),'
+                )))
+
+prj.rs.cpu \
+    // (S('fn cpu() {', '}', pfx='\n#[instrument]')
+        // 'info!("{:?}", CPU::new());')
+prj.rs // prj.rs.cpu
+
 prj.cargo.dsp = Sec('dsp', pfx=''); prj.cargo // prj.cargo.dsp
 prj.cargo.dsp \
     // 'ux = "0.1"' \
     // 'signalo = "0.6"'
-
-prj.rs.extern \
-    // 'extern crate num_cpus;'
-
-prj.rs.main.init \
-    // 'let cpus = num_cpus::get();' \
-    // 'info!("num_cpus: {:?}", cpus);'
-
 
 prj.sync()
