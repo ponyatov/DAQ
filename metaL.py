@@ -102,11 +102,23 @@ class Object:
 class Primitive(Object): pass
 
 class S(Primitive):
-    def __init__(self,V=None,pfx=None,sfx=None):
+    def __init__(self,V=None,end=None,pfx=None,sfx=None):
         super().__init__(V)
+        self.end=end
         self.pfx=pfx;self.sfx=sfx
     def gen(self,to,depth=0):
-        ret = f'{to.tab*depth}{self.value}\n'
+        ret = ''
+        if self.pfx is not None:
+            if self.pfx: ret += f'{to.tab*depth}{self.pfx}\n'
+            else: ret += '\n'
+        if self.value is not None:
+            ret += f'{to.tab*depth}{self.value}\n'
+        for i in self: ret += i.gen(to,depth+1)
+        if self.end is not None:
+            ret += f'{to.tab*depth}{self.end}\n'
+        if self.sfx is not None:
+            if self.sfx: ret += f'{to.tab*depth}{self.sfx}\n'
+            else: ret += '\n'
         return ret
 
 class Sec(S):
@@ -167,6 +179,10 @@ class mkFile(File):
     def __init__(self,V='Makefile',ext='',tab='\t',comment='#'):
         super().__init__(V,ext,tab,comment)
 
+class jsonFile(File):
+    def __init__(self,V,ext='.json',tab=' '*2,comment='//'):
+        super().__init__(V,ext,tab,comment)
+
 class Project(Module):
     def __init__(self,V=None):
         if V is None: V = os.getcwd().split('/')[-1]
@@ -223,6 +239,28 @@ class Project(Module):
 
     def vs_code(self):
         self.vscode = Dir('.vscode');self.d//self.vscode
+        self.vs_settings()
+        self.vs_tasks()
+        self.vs_exts()
+
+    def vs_settings(self):
+        self.vscode.settings = jsonFile('settings');self.vscode//self.vscode.settings
+
+    def vs_tasks(self):
+        self.vscode.tasks = jsonFile('tasks');self.vscode//self.vscode.tasks
+
+    def vs_exts(self):
+        self.vscode.exts = jsonFile('extensions');self.vscode//self.vscode.exts
+        self.vscode.ext = (Sec()
+		// '"ryuta46.multi-command",' \
+		// '"stkb.rewrap",' \
+		// '"tabnine.tabnine-vscode",' \
+		// '// "auchenberg.vscode-browser-preview",' \
+		// '// "ms-azuretools.vscode-docker",')
+        self.vscode.exts \
+            // (S('{','}') \
+                // (S('"recommendations": [',']') \
+                    //self.vscode.ext))
 
     def d_dirs(self):
         self.bin = Dir('bin');self.d//self.bin
@@ -255,9 +293,11 @@ class Mod(Module):
     def pipe(self,p):
         self.f_giti(p)
         self.f_mk(p)
+        self.vs_code(p)
         return p
     def f_giti(self,p): pass
     def f_mk(self,p):pass
+    def vs_code(self,p):pass
 
 class pyFile(File):
     def __init__(self,V,ext='.py',tab=' '*4,comment='#'):
@@ -269,14 +309,38 @@ class Python(Mod):
         self.f_src(p)
         return p
     def f_src(self,p):
-        p.py = pyFile(f'{p}');p.d//p.py
-        p.test = pyFile(f'test_{p}');p.d//p.test
         p.config = pyFile('config');p.d//p.config
+        self.p_py(p)
+        self.p_test(p)
+    def p_py(self,p):
+        p.py = pyFile(f'{p}');p.d//p.py
+        p.py \
+            // 'import config' // '' \
+            // 'import os, sys, re, time' \
+            // 'import datetime as dt'
+    def p_test(self,p):
+        p.test = pyFile(f'test_{p}');p.d//p.test
+        p.test \
+            // 'import pytest' // f'from {p} import *' // ''
+        p.test \
+            // 'def test_any(): assert True'
     def f_giti(self,p):
         p.giti // (Sec('py',sfx='')
             // '/.cache/' // '/__pycache__/' // '*.pyc')
+    def vs_code(self,p):
+        p.vscode.ext // '"tht13.python",'
 
 class Rust(Mod):
     def pipe(self,p):
         p = super().pipe(p)
         return p
+
+class metaL(Python):
+    pass
+
+class Java(Mod):
+    pass
+
+# from metaL import *
+prj = Project() | metaL() | Rust()
+prj.sync()

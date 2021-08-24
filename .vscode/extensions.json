@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ryuta46.multi-command",
+    "stkb.rewrap",
+    "tabnine.tabnine-vscode",
+    // "auchenberg.vscode-browser-preview",
+    // "ms-azuretools.vscode-docker",
+    "tht13.python",
+  ]
+}
