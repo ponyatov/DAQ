@@ -102,7 +102,7 @@ class Object:
 class Primitive(Object): pass
 
 class S(Primitive):
-    def __init__(self,V='',pfx=None,sfx=None):
+    def __init__(self,V=None,pfx=None,sfx=None):
         super().__init__(V)
         self.pfx=pfx;self.sfx=sfx
     def gen(self,to,depth=0):
@@ -112,11 +112,14 @@ class S(Primitive):
 class Sec(S):
     def gen(self,to,depth=0):
         ret = ''
-        ret += f'{to.tab*depth}{to.comment} \\ {self.value}\n'
+        if self.value is not None:
+            ret += f'{to.tab*depth}{to.comment} \\ {self.value}\n'
         for i in self: ret += i.gen(to,depth+0)
-        ret += f'{to.tab*depth}{to.comment} / {self.value}\n'
+        if self.value is not None:
+            ret += f'{to.tab*depth}{to.comment} / {self.value}\n'
         if self.sfx is not None:
-            if not self.pfx: ret += '\n'
+            if self.pfx: ret += f'{to.tab*depth}{self.pfx}\n'
+            else: ret += '\n'
         return ret
 
 
@@ -143,7 +146,7 @@ class File(IO):
     def sync(self):
         with open(self.path,'w') as F:
             for i in self: F.write(i.gen(self))
-            for j in self.bot: F.write(j.gen(self))
+            F.write(self.bot.gen(self))
 
 class giti(File):
     def __init__(self,V='',ext='.gitignore'):
@@ -157,20 +160,22 @@ class Module(Meta):
         assert not spec
         return f'{self.value}'
 
+class mkFile(File):
+    def __init__(self,V='Makefile',ext='',tab='\t',comment='#'):
+        super().__init__(V,ext,tab,comment)
+
 class Project(Module):
     def __init__(self,V=None):
         if V is None: V = os.getcwd().split('/')[-1]
         super().__init__(V)
         self.d = Dir(f'{self}')
-        # vscode = Dir(.vscode) ; d//vscode
-        # bin = Dir(bin) ; d//bin
-        # = Dir(doc) ; d//
-        # = Dir(lib) ; d//
-        # = Dir(src) ; d//
-        # = Dir(tmp) ; d//
         self.d_dirs()
         self.vs_code()
         self.f_giti()
+        self.f_mk()
+
+    def f_mk(self):
+        self.mk = mkFile();self.d//self.mk
 
     def vs_code(self):
         self.vscode = Dir('.vscode');self.d//self.vscode
