@@ -99,6 +99,16 @@ class Object:
         that = self.box(that)
         self.nest.append(that); return self
 
+    def ins(self, idx, that):
+        assert isinstance(idx, int)
+        that = self.box(that)
+        self.nest.insert(idx, that); return self
+
+    def replace(self, idx, that):
+        assert isinstance(idx, int)
+        that = self.box(that)
+        self.nest[idx] = that; return self
+
 class Primitive(Object): pass
 
 class S(Primitive):
@@ -124,17 +134,18 @@ class S(Primitive):
 class Sec(S):
     def gen(self,to,depth=0):
         ret = ''
-        if self.pfx is not None:
-            if self.pfx: ret += f'{to.tab*depth}{self.pfx}\n'
-            else: ret += '\n'
-        if self.value is not None and self:
-            ret += f'{to.tab*depth}{to.comment} \\ {self.value}\n'
-        for i in self: ret += i.gen(to,depth+0)
-        if self.value is not None and self:
-            ret += f'{to.tab*depth}{to.comment} / {self.value}\n'
-        if self.sfx is not None:
-            if self.sfx: ret += f'{to.tab*depth}{self.sfx}\n'
-            else: ret += '\n'
+        if self:
+            if self.pfx is not None:
+                if self.pfx: ret += f'{to.tab*depth}{self.pfx}\n'
+                else: ret += '\n'
+            if self.value is not None:
+                ret += f'{to.tab*depth}{to.comment} \\ {self.value}\n'
+            for i in self: ret += i.gen(to,depth+0)
+            if self.value is not None:
+                ret += f'{to.tab*depth}{to.comment} / {self.value}\n'
+            if self.sfx is not None:
+                if self.sfx: ret += f'{to.tab*depth}{self.sfx}\n'
+                else: ret += '\n'
         return ret
 
 
@@ -210,33 +221,53 @@ class Project(Module):
     def mk_var(self):
         self.mk.var_ = Sec('var');self.mk//self.mk.var_
         self.mk.var_ \
+            // '# detect module/project name by current directory' \
             // f'{"MODULE":<7} = $(notdir $(CURDIR))' \
-            // f'{"OS":<7} = $(shell uname -s)'
+            // '# detect OS name (only Linux/MinGW)' \
+            // f'{"OS":<7} = $(shell uname -s)' \
+            // '# current date in the `ddmmyy` format' \
+            // f'{"NOW":<7} = $(shell date +%d%m%y)' \
+            // '# release hash: four hex digits (for snapshots)' \
+            // f'{"REL":<7} = $(shell git rev-parse --short=4 HEAD)' \
+            // '# current git branch' \
+            // f'{"BRANCH":<7} = $(shell git rev-parse --abbrev-ref HEAD)' \
+            // '# number of CPU cores (for parallel builds)' \
+            // f'{"CORES":<7} = $(shell grep processor /proc/cpuinfo| wc -l)'
+
     def mk_dir(self):
         self.mk.dir_ = Sec('dir',pfx='');self.mk//self.mk.dir_
         self.mk.dir_ \
+            // '# current (project) directory' \
             // f'{"CWD":<7} = $(CURDIR)' \
+            // '# compiled/executable files (target dir)' \
             // f'{"BIN":<7} = $(CWD)/bin' \
+            // '# documentation & external manuals download' \
             // f'{"DOC":<7} = $(CWD)/doc' \
+            // '# libraries / scripts' \
             // f'{"LIB":<7} = $(CWD)/lib' \
+            // '# source code (not for all languages, Rust/C/Java included)' \
             // f'{"SRC":<7} = $(CWD)/src' \
+            // '# temporary/flags/generated files' \
             // f'{"TMP":<7} = $(CWD)/tmp'
     def mk_tool(self):
-        self.mk.tool_ = Sec('tool');self.mk//self.mk.tool_
+        self.mk.tool = Sec('tool',pfx='');self.mk//self.mk.tool
+        self.mk.tool \
+            // '# http/ftp download' \
+            // f'{"CURL":<7} = curl -L -o'
     def mk_src(self):
-        self.mk.var_ = Sec('var');self.mk//self.mk.var_
+        self.mk.var_ = Sec('var',pfx='');self.mk//self.mk.var_
     def mk_cfg(self):
-        self.mk.cfg_ = Sec('cfg');self.mk//self.mk.cfg_
+        self.mk.cfg_ = Sec('cfg',pfx='');self.mk//self.mk.cfg_
     def mk_all(self):
-        self.mk.all_ = Sec('all');self.mk//self.mk.all_
+        self.mk.all_ = Sec('all',pfx='');self.mk//self.mk.all_
     def mk_rule(self):
-        self.mk.rule_ = Sec('rule');self.mk//self.mk.rule_
+        self.mk.rule_ = Sec('rule',pfx='');self.mk//self.mk.rule_
     def mk_doc(self):
-        self.mk.doc_ = Sec('doc_');self.mk//self.mk.doc_
+        self.mk.doc_ = Sec('doc',pfx='');self.mk//self.mk.doc_
     def mk_install(self):
-        self.mk.install_ = Sec('install');self.mk//self.mk.install_
+        self.mk.install_ = Sec('install',pfx='');self.mk//self.mk.install_
     def mk_merge(self):
-        self.mk.merge_ = Sec('merge');self.mk//self.mk.merge_
+        self.mk.merge_ = Sec('merge',pfx='');self.mk//self.mk.merge_
 
     def vs_code(self):
         self.vscode = Dir('.vscode');self.d//self.vscode
@@ -245,7 +276,10 @@ class Project(Module):
         self.vs_exts()
 
     def vs_settings(self):
-        self.vscode.settings = jsonFile('settings');self.vscode//self.vscode.settings
+        self.vscode.settings_ = jsonFile('settings')
+        self.vscode//self.vscode.settings_
+        self.vscode.settings = S('{','}')
+        self.vscode.settings_//self.vscode.settings
         #
         self.vscode.multi = S('"multiCommand.commands": [','],')
         #
@@ -273,11 +307,11 @@ class Project(Module):
         #
         self.vscode.browser = S('"browser-preview.startUrl": "127.0.0.1:12345/"',pfx='')
         #
-        self.vscode.settings // (S('{','}')\
+        self.vscode.settings \
             // (Sec('multi')//self.vscode.multi) \
             // self.vscode.files \
-            // self.vscode.editor 
-            // self.vscode.browser)
+            // self.vscode.editor \
+            // self.vscode.browser
 
     def vs_tasks(self):
         self.vscode.tasks = jsonFile('tasks');self.vscode//self.vscode.tasks
@@ -363,17 +397,30 @@ class Python(Mod):
         p.giti // (Sec('py',sfx='')
             // '/.cache/' // '/__pycache__/' // '*.pyc')
 
+    PEP8 = '--ignore=E26,E302,E305,E401,E402,E701,E702'
     def vs_code(self,p):
         p.vscode.ext // '"tht13.python",'
         p.vscode.exclude \
             // '"*.pyc":true, "pyvenv.cfg":true,' \
             // '"**/.cache/**":true, "**/__pycache__/**":true,'
+        p.vscode.settings.ins(0,(Sec('py',sfx='')
+            // '"python.pythonPath"              : "./bin/python3",'
+            // '"python.formatting.provider"     : "autopep8",'
+            // '"python.formatting.autopep8Path" : "./bin/autopep8",'
+            // f'"python.formatting.autopep8Args" : ["{Python.PEP8}"],'
+        ))
 
     def p_mods(self):
         return (Sec() \
             // 'import os, sys, re'
             // 'import datetime as dt')
 
+    def f_mk(self,p):
+        p.mk.tool \
+            // f'{"PY":<7} = $(BIN)/python3' \
+            // f'{"PIP":<7} = $(BIN)/pip3' \
+            // f'{"PYT":<7} = $(BIN)/pytest' \
+            // f'{"PEP":<7} = $(BIN)/autopep8'
 
 class Rust(Mod):
     def pipe(self,p):
