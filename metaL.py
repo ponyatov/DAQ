@@ -251,17 +251,17 @@ class Project(Module):
         #
         self.vscode.files = (Sec('files',pfx=''))
         #
-        self.vscode.exclude = Sec('exclude')
+        self.vscode.exclude = Sec() // '"**/docs/**":true,'
         self.vscode.files \
             //(S('"files.exclude": {','},') \
                 //self.vscode.exclude)
         #
-        self.vscode.watcher = Sec('watcher');self.vscode.files//self.vscode.watcher
+        self.vscode.watcher = Sec();self.vscode.files//self.vscode.watcher
         self.vscode.files \
             //(S('"files.watcherExclude": {','},') \
                 //self.vscode.watcher)
         #
-        self.vscode.assoc = Sec('assoc');self.vscode.files//self.vscode.assoc
+        self.vscode.assoc = Sec();self.vscode.files//self.vscode.assoc
         self.vscode.files \
             //(S('"files.associations": {','},') \
                 //self.vscode.assoc)
@@ -347,20 +347,28 @@ class Python(Mod):
         p.config.top = Sec()
         self.p_py(p)
         self.p_test(p)
+
     def p_py(self,p):
         p.py = pyFile(f'{p}');p.d//p.py
         p.py // self.p_mods()
+
     def p_test(self,p):
         p.test = pyFile(f'test_{p}');p.d//p.test
         p.test \
             // 'import pytest' // f'from {p} import *' // ''
         p.test \
             // 'def test_any(): assert True'
+
     def f_giti(self,p):
         p.giti // (Sec('py',sfx='')
             // '/.cache/' // '/__pycache__/' // '*.pyc')
+
     def vs_code(self,p):
         p.vscode.ext // '"tht13.python",'
+        p.vscode.exclude \
+            // '"*.pyc":true, "pyvenv.cfg":true,' \
+            // '"**/.cache/**":true, "**/__pycache__/**":true,'
+
     def p_mods(self):
         return (Sec() \
             // 'import os, sys, re'
@@ -380,6 +388,9 @@ class metaL(Python):
     def p_metal(self,p):
         p.metal = pyFile('metaL');p.d//p.metal
         p.metal // self.p_mods()
+    def vs_code(self,p):
+        p.vscode.exclude // f'"**/{p}/**":true,'
+        super().vs_code(p)
 
 class Java(Mod):
     pass

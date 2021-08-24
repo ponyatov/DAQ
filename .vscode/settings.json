@@ -6,6 +6,10 @@
 
   // \ files
   "files.exclude": {
+    "**/docs/**":true,
+    "**/DAQ/**":true,
+    "*.pyc":true, "pyvenv.cfg":true,
+    "**/.cache/**":true, "**/__pycache__/**":true,
   },
   "files.watcherExclude": {
   },
