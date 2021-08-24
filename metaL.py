@@ -112,13 +112,16 @@ class S(Primitive):
 class Sec(S):
     def gen(self,to,depth=0):
         ret = ''
-        if self.value is not None:
+        if self.pfx is not None:
+            if self.pfx: ret += f'{to.tab*depth}{self.pfx}\n'
+            else: ret += '\n'
+        if self.value is not None and self:
             ret += f'{to.tab*depth}{to.comment} \\ {self.value}\n'
         for i in self: ret += i.gen(to,depth+0)
-        if self.value is not None:
+        if self.value is not None and self:
             ret += f'{to.tab*depth}{to.comment} / {self.value}\n'
         if self.sfx is not None:
-            if self.pfx: ret += f'{to.tab*depth}{self.pfx}\n'
+            if self.sfx: ret += f'{to.tab*depth}{self.sfx}\n'
             else: ret += '\n'
         return ret
 
@@ -176,6 +179,47 @@ class Project(Module):
 
     def f_mk(self):
         self.mk = mkFile();self.d//self.mk
+        self.mk_var()
+        self.mk_dir()
+        self.mk_tool()
+        self.mk_src()
+        self.mk_cfg()
+        self.mk_all()
+        self.mk_rule()
+        self.mk_doc()
+        self.mk_install()
+        self.mk_merge()
+
+    def mk_var(self):
+        self.mk.var_ = Sec('var');self.mk//self.mk.var_
+        self.mk.var_ \
+            // f'{"MODULE":<7} = $(notdir $(CURDIR))' \
+            // f'{"OS":<7} = $(shell uname -s)'
+    def mk_dir(self):
+        self.mk.dir_ = Sec('dir',pfx='');self.mk//self.mk.dir_
+        self.mk.dir_ \
+            // f'{"CWD":<7} = $(CURDIR)' \
+            // f'{"BIN":<7} = $(CWD)/bin' \
+            // f'{"DOC":<7} = $(CWD)/doc' \
+            // f'{"LIB":<7} = $(CWD)/lib' \
+            // f'{"SRC":<7} = $(CWD)/src' \
+            // f'{"TMP":<7} = $(CWD)/tmp'
+    def mk_tool(self):
+        self.mk.tool_ = Sec('tool');self.mk//self.mk.tool_
+    def mk_src(self):
+        self.mk.var_ = Sec('var');self.mk//self.mk.var_
+    def mk_cfg(self):
+        self.mk.cfg_ = Sec('cfg');self.mk//self.mk.cfg_
+    def mk_all(self):
+        self.mk.all_ = Sec('all');self.mk//self.mk.all_
+    def mk_rule(self):
+        self.mk.rule_ = Sec('rule');self.mk//self.mk.rule_
+    def mk_doc(self):
+        self.mk.doc_ = Sec('doc_');self.mk//self.mk.doc_
+    def mk_install(self):
+        self.mk.install_ = Sec('install');self.mk//self.mk.install_
+    def mk_merge(self):
+        self.mk.merge_ = Sec('merge');self.mk//self.mk.merge_
 
     def vs_code(self):
         self.vscode = Dir('.vscode');self.d//self.vscode
@@ -210,9 +254,10 @@ class Mod(Module):
         super().__init__('mod')
     def pipe(self,p):
         self.f_giti(p)
+        self.f_mk(p)
         return p
-    def f_giti(self,p):
-        pass
+    def f_giti(self,p): pass
+    def f_mk(self,p):pass
 
 class pyFile(File):
     def __init__(self,V,ext='.py',tab=' '*4,comment='#'):
@@ -235,6 +280,3 @@ class Rust(Mod):
     def pipe(self,p):
         p = super().pipe(p)
         return p
-
-prj = Project() | Python() | Rust()
-prj.sync()
