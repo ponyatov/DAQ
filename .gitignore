@@ -1,0 +1,14 @@
+*~
+*.swp
+*.log
+
+/docs/
+/DAQ/
+
+# \ py
+/.cache/
+/__pycache__/
+*.pyc
+# / py
+
+!.gitignore
