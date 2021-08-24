@@ -18,4 +18,6 @@
   "editor.rulers": [80],
   "workbench.tree.indent": 32,
   // / editor
+
+  "browser-preview.startUrl": "127.0.0.1:12345/"
 }

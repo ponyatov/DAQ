@@ -271,10 +271,13 @@ class Project(Module):
             // '"editor.rulers": [80],' \
             // '"workbench.tree.indent": 32,')
         #
+        self.vscode.browser = S('"browser-preview.startUrl": "127.0.0.1:12345/"',pfx='')
+        #
         self.vscode.settings // (S('{','}')\
             // (Sec('multi')//self.vscode.multi) \
             // self.vscode.files \
-            // self.vscode.editor )
+            // self.vscode.editor 
+            // self.vscode.browser)
 
     def vs_tasks(self):
         self.vscode.tasks = jsonFile('tasks');self.vscode//self.vscode.tasks
