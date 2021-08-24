@@ -9,6 +9,14 @@
 /.cache/
 /__pycache__/
 *.pyc
+/pyvenv.cfg
+/lib/python*/
+/lib64
+/share/
+/include/
 # / py
+
+/target/
+/Cargo.lock
 
 !.gitignore

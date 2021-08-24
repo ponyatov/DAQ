@@ -11,3 +11,5 @@ github: https://github.com/ponyatov//DAQ
 * DSP: real-time signal processing
 * IoT/Automation support
 
+// @ [Rust Forum](https://users.rust-lang.org/t/what-are-good-tutorials-and-code-samples-for-dsp-and-real-time-queued-processing/63944)
+
