@@ -157,9 +157,10 @@ class File(IO):
     def __init__(self,V,ext='',tab='\t',comment='#'):
         super().__init__(V+ext)
         self.tab=tab;self.comment=comment
-        self.bot = Sec()
+        self.top = Sec(); self.bot = Sec()
     def sync(self):
         with open(self.path,'w') as F:
+            F.write(self.top.gen(self))
             for i in self: F.write(i.gen(self))
             F.write(self.bot.gen(self))
 
@@ -302,6 +303,7 @@ class Mod(Module):
 class pyFile(File):
     def __init__(self,V,ext='.py',tab=' '*4,comment='#'):
         super().__init__(V,ext,tab,comment)
+        self.top // 'import config' // ''
 
 class Python(Mod):
     def pipe(self,p):
@@ -310,14 +312,12 @@ class Python(Mod):
         return p
     def f_src(self,p):
         p.config = pyFile('config');p.d//p.config
+        p.config.top = Sec()
         self.p_py(p)
         self.p_test(p)
     def p_py(self,p):
         p.py = pyFile(f'{p}');p.d//p.py
-        p.py \
-            // 'import config' // '' \
-            // 'import os, sys, re, time' \
-            // 'import datetime as dt'
+        p.py // self.p_mods()
     def p_test(self,p):
         p.test = pyFile(f'test_{p}');p.d//p.test
         p.test \
@@ -329,6 +329,11 @@ class Python(Mod):
             // '/.cache/' // '/__pycache__/' // '*.pyc')
     def vs_code(self,p):
         p.vscode.ext // '"tht13.python",'
+    def p_mods(self):
+        return (Sec() \
+            // 'import os, sys, re'
+            // 'import datetime as dt')
+
 
 class Rust(Mod):
     def pipe(self,p):
@@ -336,7 +341,13 @@ class Rust(Mod):
         return p
 
 class metaL(Python):
-    pass
+    def pipe(self,p):
+        p = super().pipe(p)
+        self.p_metal(p)
+        return p
+    def p_metal(self,p):
+        p.metal = pyFile('metaL');p.d//p.metal
+        p.metal // self.p_mods()
 
 class Java(Mod):
     pass

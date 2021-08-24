@@ -1,3 +1,5 @@
+import config
+
 import pytest
 from DAQ import *
 

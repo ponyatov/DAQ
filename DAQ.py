@@ -1,4 +1,4 @@
 import config
 
-import os, sys, re, time
+import os, sys, re
 import datetime as dt
