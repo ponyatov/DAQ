@@ -246,6 +246,35 @@ class Project(Module):
 
     def vs_settings(self):
         self.vscode.settings = jsonFile('settings');self.vscode//self.vscode.settings
+        #
+        self.vscode.multi = S('"multiCommand.commands": [','],')
+        #
+        self.vscode.files = (Sec('files',pfx=''))
+        #
+        self.vscode.exclude = Sec('exclude')
+        self.vscode.files \
+            //(S('"files.exclude": {','},') \
+                //self.vscode.exclude)
+        #
+        self.vscode.watcher = Sec('watcher');self.vscode.files//self.vscode.watcher
+        self.vscode.files \
+            //(S('"files.watcherExclude": {','},') \
+                //self.vscode.watcher)
+        #
+        self.vscode.assoc = Sec('assoc');self.vscode.files//self.vscode.assoc
+        self.vscode.files \
+            //(S('"files.associations": {','},') \
+                //self.vscode.assoc)
+        #
+        self.vscode.editor = (Sec('editor',pfx='')
+            // '"editor.tabSize": 4,' \
+            // '"editor.rulers": [80],' \
+            // '"workbench.tree.indent": 32,')
+        #
+        self.vscode.settings // (S('{','}')\
+            // (Sec('multi')//self.vscode.multi) \
+            // self.vscode.files \
+            // self.vscode.editor )
 
     def vs_tasks(self):
         self.vscode.tasks = jsonFile('tasks');self.vscode//self.vscode.tasks

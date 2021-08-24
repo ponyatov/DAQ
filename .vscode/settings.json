@@ -1,0 +1,21 @@
+{
+  // \ multi
+  "multiCommand.commands": [
+  ],
+  // / multi
+
+  // \ files
+  "files.exclude": {
+  },
+  "files.watcherExclude": {
+  },
+  "files.associations": {
+  },
+  // / files
+
+  // \ editor
+  "editor.tabSize": 4,
+  "editor.rulers": [80],
+  "workbench.tree.indent": 32,
+  // / editor
+}
